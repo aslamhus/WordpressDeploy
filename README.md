@@ -1,1 +1,118 @@
 # WordpressDeploy
+
+## Test against your .yaswpd.json file
+
+You can run tests against your own settings. From your project root, run:
+
+```bash
+vendor/bin/yas-wpd test
+```
+
+You can get verbose testing output by passing the `-v` option.
+
+## Assumptions
+
+1. Assumes wordpress directory is in root / public directory. See .yaswpd.json settings.
+
+## Inject ENV Files
+
+In your `.yaswpd.json` file, you can specify files that should be updated based on the environment (staging,local,production). See `files` property.
+
+### Example
+
+```js
+
+{
+    ...,
+  "files": [
+     [
+      ".htaccess", // target file
+      {
+        "directory": "", // the directory to search for the target file and env file (defaults to 'public')
+        "local": ".dev.htaccess", // files to replace based on environment
+        "production": ".prod.htaccess",
+        "staging": ".staging.htaccess"
+      }
+    ],
+    [
+      "wp-config.php",
+      {
+        "directory": "",
+        "local": "wp-config-local.php",
+        "production": "wp-config-production.php",
+        "staging": "wp-config-staging.php"
+      }
+    ],
+    [
+      ".env",
+      {
+        "directory": "",
+        "local": ".local.env",
+        "production": ".prod.env",
+        "staging": ".staging.env"
+      }
+    ]
+  ],
+}
+```
+
+Note: Make sure all the env files are in the same directory as the target file or you will encounter the error: `Target file not found: ' . $target_file. '. Please make sure that the injecting files exist in the same directory`
+
+## Add your own custom scripts to the push process
+
+The push command has two hooks for custom scripts, `prePush` and `postPush`. Here's an example of how to run a `prePush` script.
+
+### Example
+
+1. Add scripts to your .yaswpd.json file:
+
+```json
+  ...,
+ "hooks": {
+    "prePush": ["bin/test", "bin/test2"],
+    "postPush": ["bin/cloudflare"]
+  }
+```
+
+2. Make sure to give your scripts execute privileges by running `chmod +x <script>`
+
+3. Add a hashbang to specify your script language
+
+```php
+##!/usr/bin/env php
+<?php
+
+echo "hey girl, this script triggers an error!";
+exit(1);
+
+```
+
+### Exit code
+
+If your custom script exits with a code any other than 0, push will throw an error and stop.
+
+### Access .yaswpd.json settings in your script
+
+```php
+##!/usr/bin/env php
+<?php
+
+$settings = $_SERVER['settings'];
+print_r(json_decode($settings));
+exit;
+
+```
+
+## Troubleshooting
+
+### Push errors
+
+#### Cannot change mode to rwxrwxr-x: Operation not permitted
+
+If you encounter this error, your SSH user does not have sufficient permissions on the host.
+
+Change your SSH host and user settings to a user with the correct permissions. You may need to reset permissions on your server, or you may need to use a different user in your `.yaswpd.json` file who has sufficient permissions (such as root / admin).
+
+This error is encountered when extracting the tarball of your wp-content files on the host. If you can't change your user to root, your files are most likely still being extracted. You may need to check this manually. If they are, you can ignore the message.
+
+It's best to use the user who owns the file changes / permissions your site / application. Changing ownership may create other issues, such as `Rsync Permission denied (13)` when trying to push files.

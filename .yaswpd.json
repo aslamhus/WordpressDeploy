@@ -1,0 +1,87 @@
+{
+  "project": "My site name",
+  "ssh": {
+    "production": {
+      "host": "xx.xx.xx.xx",
+      "user": "user",
+      "port": 22
+    },
+    "staging": {
+      "host": "xx.xx.xx.xx",
+      "user": "user",
+      "port": 22
+    }
+  },
+
+  "local": {
+    "root": "/absolute/path/to/local/root",
+    "public": "public",
+    "tmp": "/tmp",
+    "url": "http://localhost:8080",
+    "db": "wp_database"
+  },
+  "production": {
+    "root": "/absolute/path/to/remote/root",
+    "public": "public",
+    "tmp": "/absolute/path/to/tmp",
+    "url": "https://mysite.com",
+    "db": "wp_production_database_name"
+  },
+  "staging": {
+    "root": "/absolute/path/to/remote/staging",
+    "public": "public_html",
+    "tmp": "/absolute/path/to/tmp",
+    "url": "https://test.mysite.com",
+    "db": "wp_staging_database_name"
+  },
+  "wpcli": {
+    "remote": ["wp"],
+    "local": ["vendor/bin/whr", "wp"]
+  },
+  "composer": {
+    "remote": "composer",
+    "local": "composer"
+  },
+
+  "wordpress": {
+    "user": "admin",
+    "email": "admin@example.com"
+  },
+
+  "docker": {
+    "tmp_volume": "./Docker/data/tmp:/tmp/Docker"
+  },
+  "files": [
+    [
+      ".htaccess",
+      {
+        "directory": "",
+        "local": ".local.htaccess",
+        "production": ".production.htaccess",
+        "staging": ".staging.htaccess"
+      }
+    ],
+    [
+      "wp-config.php",
+      {
+        "directory": "",
+        "local": "wp-config-local.php",
+        "production": "wp-config-production.php",
+        "staging": "wp-config-staging.php"
+      }
+    ],
+    [
+      ".env",
+      {
+        "directory": "",
+        "local": ".local.env",
+        "production": ".prod.env",
+        "staging": ".staging.env"
+      }
+    ]
+  ],
+
+  "upload_type": "rsync",
+  "dry_run": false,
+  "timezone": "America/Vancouver"
+}

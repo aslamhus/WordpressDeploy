@@ -1,0 +1,19 @@
+#!/usr/bin/env php
+<?php
+
+require_once __DIR__ . '/../config.php';
+
+
+use Symfony\Component\Console\Application;
+use Yashus\WPD\Commands;
+
+
+
+$app = new Application();
+
+// ... register commands
+
+$app->addCommand(new Commands\CreatePullCommand);
+$app->addCommand(new Commands\CreatePushCommand);
+$app->addCommand(new Commands\CreateTestCommand);
+$app->run();

@@ -1,0 +1,6 @@
+bin_old
+vendor
+.dev.readme.md
+.DS_Store
+.phpunit.cache
+Todo
