@@ -1,11 +1,64 @@
 # WordpressDeploy
 
+## Push
+
+To perform a complete push:
+
+```bash
+# env == staging | production
+vendor/bin/yas-wpd push <env>
+
+```
+
+### Push options
+
+```bash
+# Push without interaction. Assumes you want to push everything (wp-content,database,composer and flush cache)
+vendor/bin/yas-wpd push <env> --no-interaction
+
+## ‼️ Beware Setting any of the following options will disable interaction
+## Push only wp-content
+vendor/bin/yas-wpd push <env> --wp-content
+## Push only db
+vendor/bin/yas-wpd push <env> --db
+## Push only composer
+vendor/bin/yas-wpd push <env> --composer
+## Flush the cache
+vendor/bin/yas-wpd push <env> --flush-cache
+## Push a combination
+vendor/bin/yas-wpd push <env> --wp-content --composer --flush-cache
+
+## Negate
+## All the above options can be negated
+## push everything except wp-content
+vendor/bin/yas-wpd push <env> --no-wp-content
+## push everything except db
+vendor/bin/yas-wpd push <env> --no-db
+## push everything except composer and do not flush cache
+vendor/bin/yas-wpd push <env> --no-composer --no-flush-cache
+
+```
+
 ## Test against your .yaswpd.json file
 
 You can run tests against your own settings. From your project root, run:
 
 ```bash
-vendor/bin/yas-wpd test
+vendor/bin/yas-wpd test <testsuite>
+```
+
+List the available tests
+
+```bash
+vendor/bin/yas-wpd test --list
+```
+
+Perform a test of your settings json.
+
+**_Note: this only tests the structure/type of your settings, not whether the filepaths exists._**
+
+```bash
+vendor/bin/yas-wpd test settings
 ```
 
 You can get verbose testing output by passing the `-v` option.
@@ -13,6 +66,7 @@ You can get verbose testing output by passing the `-v` option.
 ## Assumptions
 
 1. Assumes wordpress directory is in root / public directory. See .yaswpd.json settings.
+2. Built to work with docker, but can in theory work without a docker container, i.e. in a MAMP / XAMPP environment
 
 ## Inject ENV Files
 

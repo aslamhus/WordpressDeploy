@@ -56,4 +56,14 @@ class Settings extends AbstractArraySettings
     {
         return $this->offsetGet($env->__toString());
     }
+
+    public function jsonSerialize(): mixed
+    {
+        // make sure to update all values!
+        foreach (get_class_vars(self::class) as $key => $value) {
+            if (!isset($this->{$key}) || $key == 'data') continue;
+            $this->data[$key] = $this->{$key};
+        }
+        return $this->data;
+    }
 }

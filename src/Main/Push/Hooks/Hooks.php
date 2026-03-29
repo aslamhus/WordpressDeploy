@@ -1,6 +1,6 @@
 <?php
 
-namespace Yashus\WPD\Main\Push;
+namespace Yashus\WPD\Main\Push\Hooks;
 
 readonly class Hooks
 {

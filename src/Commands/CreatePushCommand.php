@@ -5,6 +5,7 @@ namespace Yashus\WPD\Commands;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Attribute\Argument;
+use Symfony\Component\Console\Attribute\Option;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Yashus\WPD\SSH\SSH;
@@ -31,21 +32,52 @@ use Yashus\WPD\Types\YASWPD\Settings;
 class CreatePushCommand
 {
 
-    private Push $push;
 
+    private Push $push;
     public function __invoke(
         InputInterface $input,
         OutputInterface $output,
         SymfonyStyle $io,
-
-        #[Argument('The deploy environment)')] string $env
+        #[Argument('The deploy environment)')] string $env,
+        #[Option('push wp-content')] ?bool $wpContent = null,
+        #[Option('push db')] ?bool $db = null,
+        #[Option('push composer')] ?bool $composer = null,
+        #[Option('flush cache after pushing')] ?bool $flushCache = null
     ): int {
-        // init env type and default push options
+        // init env type
         $env = new Env($env);
+        // verify type
+
+
+
+        // init PushOptions
         $options = new PushOptions([
-            'shouldPushDb' => true,
-            'shouldPushArchive' => true,
-        ]);
+            'shouldPushDb' => $db,
+            'shouldPushArchive' => $wpContent,
+            'shouldPushComposer' => $composer,
+            'shouldFlushCache' => $flushCache
+        ], $input->isInteractive());
+
+
+        // if any options have been set, do not interact
+        if (isset($wpContent) || isset($db) || isset($composer) || isset($flushCache)) {
+            $options->setInteraction(false);
+        }
+        // if no push options have been set, assume all are true
+        if (!isset($wpContent) &&  !isset($db) && !isset($composer) && !isset($flushCache)) {
+            $options->setShouldPushArchive(true);
+            $options->setShouldPushDb(true);
+            $options->setShouldPushComposer(true);
+            $options->setShouldFlushCache(true);
+        }
+        // disable interaction if no interaction is specifically set via --no-interaction
+        if ($input->isInteractive() === false) {
+            $options->setInteraction(false);
+        }
+        echo json_encode($options, JSON_PRETTY_PRINT);
+        exit;
+
+
         // handle sign int
         pcntl_signal(SIGINT, [$this, 'sigIntHandler']);
         try {
@@ -63,14 +95,12 @@ class CreatePushCommand
 
             switch ($env) {
                 case Env::type['staging']:
+                case Env::type['production']:
                     // push to staging
                     $this->push = new Push(...$args);
                     break;
 
-                case Env::type['production']:
-                    // push to production
-                    $this->push = new Push(...$args);
-                    break;
+
 
                 default:
                     $output->writeln('Unknown env type: ' . $env);

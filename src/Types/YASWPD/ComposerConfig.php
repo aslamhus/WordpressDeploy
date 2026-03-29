@@ -23,4 +23,14 @@ class ComposerConfig extends AbstractArraySettings
             $this->data['install'] = $params['install'];
         }
     }
+
+    public function getComposerCmd(): string
+    {
+        return implode(" ", $this->data['cmd']);
+    }
+
+    public function getComposerInstallOptions(): ?string
+    {
+        return implode(" ", $this->data['install']);
+    }
 }

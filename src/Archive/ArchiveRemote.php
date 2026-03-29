@@ -2,9 +2,7 @@
 
 namespace Yashus\WPD\Archive;
 
-use phpseclib3\Net\SSH2;
-use RuntimeException;
-use Yashus\WPD\Types\YASWPD\EnvSettings;
+use Yashus\WPD\SSH\SSH;
 
 class ArchiveRemote
 {
@@ -28,14 +26,15 @@ class ArchiveRemote
      * Create archive
      * TODO: check for previous archive, ask if you want to overwrite
      */
-    public function create(SSH2 $ssh, string $archiveFilename, array $exclude = []): bool
+    public function create(SSH $ssh, string $archiveFilename, array $exclude = []): bool
     {
         $archiveFilename = escapeshellarg($archiveFilename);
         $remoteTmpDir    = escapeshellarg($this->remote_tmp_dir);
         $tar_cmd = $this->getTarCommand($archiveFilename, $exclude);
         // set a longer timeout for large archives
         $ssh->setTimeout(3600);
-        $result = $ssh->exec("
+        try {
+            $ssh->exec("
             cd {$this->wp_dir} || exit 1;
             # verify wordpress directory
             if ! {$this->wpcli} db check --quiet &>/dev/null; then
@@ -57,34 +56,30 @@ class ArchiveRemote
             echo \"Full report: \$tar_cmd\"
             echo 'Moving archive {$archiveFilename} to tmp directory: {$remoteTmpDir}'
             mv {$archiveFilename} {$remoteTmpDir} || { echo 'Failed to move archive to {$remoteTmpDir}'; exit 1; }
-        ");
-
-        $status = $ssh->getExitStatus();
-        if ($status != 0) {
-            throw new \Exception("Remote archive creation failed with status $status: " . $result);
+        ", $output, $exit_code);
+        } catch (\Exception $e) {
+            throw new \Exception("Remote archive creation failed.", $exit_code, $e);
         }
+
+
 
         return true;
     }
 
-    public function verifyWordpressDirectory(SSH2 $ssh)
+    public function verifyWordpressDirectory(SSH $ssh)
     {
-        $ssh->exec("cd {$this->wp_dir} || exit 1; }");
-        return $ssh->getExitStatus() == 0;
+        return $ssh->exec("cd {$this->wp_dir} || exit 1; }");
     }
 
-    public function getWPContentDirectorySize(SSH2 $ssh)
+    public function getWPContentDirectorySize(SSH $ssh)
     {
-        $result = $ssh->exec("
+        $ssh->exec("
             cd {$this->wp_dir}
             size=$(du -sh wp-content)
             [[ \$? -ne 0 ]] && exit 1
             echo \"\$size\" | awk '{print $1}'
-        ");
-        if ($ssh->getExitStatus() != 0) {
-            throw new \Exception("Failed to get size of wp-content dir: $result");
-        }
-        return trim($result);
+        ", $output);
+        return trim($output ?? "");
     }
 
     /**
@@ -119,57 +114,59 @@ class ArchiveRemote
      * 
      * For exit codes @see https://www.gnu.org/software/tar/manual/html_node/Synopsis.html
      * 
-     * @param SSH2 $ssh 
+     * @param SSH $ssh 
      * @param string $archiveFilepath 
      * @param string $archiveFilename 
      * @param mixed &$output 
      * @param mixed &$exit_code 
      * @return bool 
-     * @throws mixed 
+     * @throws bool 
      */
-    public static function unzip(SSH2 $ssh, string $archiveFilepath, string $archiveFilename, &$output = null, &$exit_code = null)
+    public static function unzip(SSH $ssh, string $archiveFilepath, string $archiveFilename, &$output = null, &$exit_code = null)
     {
         $archiveFilepath = escapeshellarg($archiveFilepath);
         $archiveFilename = escapeshellarg($archiveFilename);
-
-        $output = $ssh->exec("
+        $exit_code = 0;
+        try {
+            $ssh->exec("
             cd $archiveFilepath || exit 1
             if [[ ! -f $archiveFilename ]]; then
                 echo \"Archive file $archiveFilename does not exist at \${PWD}\"
                 exit 1
             fi
             tar --warning=no-unknown-keyword --no-same-permissions -xvzf $archiveFilename
-        ");
-        $exit_code = $ssh->getExitStatus();
-        $msg = "";
-        switch ($exit_code) {
-            case 2:
-                $msg .= "Fatal error.";
-                break;
-            case 1:
-                $msg .= "Some files differ.";
+        ", $output, $exit_code);
+        } catch (\Exception $e) {
+            $msg = "";
+            switch ($exit_code) {
+                case 2:
+                    $msg .= "Fatal error.";
+                    break;
+                case 1:
+                    $msg .= "Some files differ.";
 
-            case 0:
-                return true;
+                case 0:
+                    return true;
 
-            default:
-                $msg .= "Error code ($exit_code)";
+                default:
+                    $msg .= "Error code ($exit_code)";
+            }
+            throw new \Exception("Failed to unzip archive: $msg. ", $exit_code, $e);
         }
-
-        throw new RuntimeException("Failed to unzip archive: $msg. " . $output, $exit_code);
+        return $exit_code === 0;
     }
 
-    public static function remove(SSH2 $ssh, string $archiveFilepath, string $archiveFilename, &$output = null, &$exit_code = null)
+    public static function remove(SSH $ssh, string $archiveFilepath, string $archiveFilename, &$output = null, &$exit_code = null)
     {
         $archiveFilepath = escapeshellarg($archiveFilepath);
         $archiveFilename = escapeshellarg($archiveFilename);
-        $output = $ssh->exec("
+        try {
+            $output = $ssh->exec("
          cd $archiveFilepath || exit 1
          rm $archiveFilename || exit 1
-        ");
-        $exit_code = $ssh->getExitStatus();
-        if ($exit_code !== 0) {
-            throw new RuntimeException('Failed to remove archive ' . $output, $exit_code);
+        ", $output, $exit_code);
+        } catch (\Exception $e) {
+            throw new \Exception("Failed to remove archive", $exit_code, $e);
         }
         return $exit_code === 0;
     }

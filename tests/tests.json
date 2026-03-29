@@ -1,0 +1,12 @@
+{
+  "settings": {
+    "description": "Test your .yawspd.json file"
+  },
+  "wordpress-local": {
+    "description": "Test your wordpress local container"
+  },
+  "composer-remote": {
+    "description": "Test pushing your composer file to staging",
+    "warning": "This will execute a secure shell to check your staging site"
+  }
+}

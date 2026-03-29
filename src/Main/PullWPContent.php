@@ -2,7 +2,6 @@
 
 namespace Yashus\WPD\Main;
 
-use phpseclib3\Net\SSH2;
 use Symfony\Component\Console\Input\InputInterface;
 use Yashus\WPD\SSH\SSH;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -72,7 +71,7 @@ class PullWPContent extends AbstractMain
             throw new \Exception('Downloading archive failed');
         }
     }
-    private function archiveRemoteWpContent(SSH2 $ssh)
+    private function archiveRemoteWpContent(SSH $ssh)
     {
         $archive = new ArchiveRemote([
             'wp_dir' => $this->remote->getPublicPath(),

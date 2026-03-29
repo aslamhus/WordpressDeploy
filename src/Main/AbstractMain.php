@@ -21,17 +21,4 @@ abstract class AbstractMain extends Console
     {
         parent::__construct($input, $output, $io);
     }
-
-
-    public function setActionCallback($callback)
-    {
-        $this->actionCallback = $callback;
-    }
-
-    public function logAction(string $action, mixed $data = null)
-    {
-        if (isCallable($this->actionCallback)) {
-            call_user_func($this->actionCallback, $action, $data);
-        }
-    }
 }

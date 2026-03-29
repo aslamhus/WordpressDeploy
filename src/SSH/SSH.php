@@ -3,11 +3,10 @@
 
 namespace Yashus\WPD\SSH;
 
+use Exception;
 use phpseclib3\Net\SSH2;
-
 use phpseclib3\Crypt\PublicKeyLoader;
 use phpseclib3\System\SSH\Agent;
-use Yashus\WPD\Types\YASWPD\SSHSettings;
 
 class SSH
 {
@@ -27,25 +26,47 @@ class SSH
     /**
      * Login via ssh-agent and create a new connection
      * Note: the connection persists until explicitly disconnected or the script ends
-     * @return SSH2 
+     * @return SSH 
      * @throws \Exception - when not authenticated
      */
-    public function login(): SSH2
+    public function login(): SSH
     {
         // TODO: log connecting to host
         $agent = new Agent;
         $this->ssh = new SSH2($this->config['host'], $this->config['port']);
-        $this->ssh->setTimeout(20);
+        $this->setTimeout(20);
         if (!$this->ssh->login($this->config['user'], $agent)) {
             throw new \Exception('Login failed. Have you added your ssh identity via ssh-add?');
         }
 
-        return $this->ssh;
+        return $this;
     }
 
-    public function connect(): SSH2
+    public function connect(): SSH
     {
-        return $this->login();
+        // start a new connection if phpseclib has not been instantiated or connection has been lost
+        if (empty($this->ssh) || !$this->isConnected(0)) {
+            return $this->login();
+        }
+        // otherwise, return already connected SSH
+        // return SSH if already connected
+        return $this;
+    }
+
+    public function disconnect(): SSH
+    {
+        if (isset($this->ssh)) {
+            $this->ssh->disconnect();
+        }
+        return $this;
+    }
+
+
+
+    public function setTimeout(mixed $timeout)
+    {
+        $this->ssh->setTimeout($timeout);
+        return $this;
     }
 
 
@@ -58,7 +79,7 @@ class SSH
     {
         $isConnected = false;
         try {
-            $this->ssh = $this->login();
+            $this->login();
             $isConnected = $this->ssh->isConnected(0);
         } catch (\Exception $e) {
             // do nothing
@@ -84,5 +105,23 @@ class SSH
     public function getConfig(): SSHConfig
     {
         return $this->config;
+    }
+
+    /**
+     * Exec 
+     * @return bool
+     * @throws SSHProcessFailedException - if process fails
+     */
+    public function exec($cmd, mixed &$output = null,  &$exit_code = 1, ?callable $callback = null): bool
+    {
+        if (!isset($this->ssh)) {
+            $this->connect();
+        }
+        $output =  $this->ssh->exec($cmd, $callback);
+        $exit_code = $this->ssh->getExitStatus(); // return false or int
+        if ($exit_code !== 0) {
+            throw new SSHProcessFailedException($exit_code, $cmd, $output);
+        }
+        return true;
     }
 }

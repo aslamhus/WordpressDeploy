@@ -3,10 +3,10 @@
 
 namespace Yashus\WPD\Wordpress;
 
-use RuntimeException;
+use Exception;
 
-use phpseclib3\Net\SSH2;
 use Symfony\Component\Process\Exception\ProcessFailedException;
+use Yashus\WPD\SSH\SSH;
 use Yashus\WPD\Types\YASWPD\EnvSettings;
 use Yashus\WPD\Types\YASWPD\Settings;
 
@@ -23,49 +23,51 @@ class WPRemote
 
     /**
      * Set maintenace mode
-     * @param SSH2 $ssh 
+     * @param SSH $ssh 
      * @param bool $activate 
      * @param mixed &$output 
      * @param mixed &$exit_code 
      * @return bool 
-     * @throws \RuntimeException
+     * @throws \Exception
      */
-    public function setMaintenanceMode(SSH2 $ssh, bool $activate, &$output = null, &$exit_code = null)
+    public function setMaintenanceMode(SSH $ssh, bool $activate, &$output = null, &$exit_code = null)
     {
         $activate = $activate ? 'activate' : 'deactivate';
         $publicPath = $this->remote->getPublicPath();
-        $output = $ssh->exec(
-            "cd '$publicPath' || exit 1
-            {$this->wpcli} --skip-themes --skip-plugins maintenance-mode $activate"
-        );
-        $exit_code = $ssh->getExitStatus();
-        if ($exit_code !== 0) {
-            throw new RuntimeException('Failed to set wordpress maintenance mode: ' . $output, $exit_code);
+        try {
+            $output = $ssh->exec(
+                "cd '$publicPath' || exit 1
+            {$this->wpcli} --skip-themes --skip-plugins maintenance-mode $activate",
+                null,
+                $exit_code
+            );
+        } catch (Exception $e) {
+            throw new Exception('Failed to set wordpress maintenance mode', $exit_code, $e);
         }
-        return $exit_code == 0;
+        return true;
     }
 
 
     /**
      * Set maintenace mode
-     * @param SSH2 $ssh 
+     * @param SSH $ssh 
      * @param bool $activate 
      * @param mixed &$output 
      * @param mixed &$exit_code 
      * @return bool 
-     * @throws \RuntimeException
+     * @throws \Exception
      */
-    public function flushCache(SSH2 $ssh, &$output = null, &$exit_code = null)
+    public function flushCache(SSH $ssh, &$output = null, &$exit_code = null)
     {
         $publicPath = $this->remote->getPublicPath();
-        $output = $ssh->exec(
-            "cd '$publicPath' || exit 1
+        try {
+            $output = $ssh->exec(
+                "cd '$publicPath' || exit 1
             {$this->wpcli} --skip-themes --skip-plugins cache flush"
-        );
-        $exit_code = $ssh->getExitStatus();
-        if ($exit_code !== 0) {
-            throw new RuntimeException('Failed to clear cache ' . $output, $exit_code);
+            );
+        } catch (Exception $e) {
+            throw new Exception('Failed to flush cache');
         }
-        return $exit_code == 0;
+        return true;
     }
 }
