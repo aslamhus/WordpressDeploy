@@ -1,13 +1,14 @@
 <?php
 
-use Yashus\WPD\Docker\DockerUtils;
+
 
 if (php_sapi_name() != 'cli') {
     echo "yas-wpd can only be called from command line";
     exit;
 }
 
-$pathToAutoload = __DIR__ . '/vendor/autoload.php';
+$pathToAutoload = getcwd() . '/vendor/autoload.php';
+
 if (!file_exists($pathToAutoload)) {
     echo "Vendor directory not found in the root directory. Please run the installer from the root directory of your project";
     exit;

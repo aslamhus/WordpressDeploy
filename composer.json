@@ -2,7 +2,7 @@
   "name": "yashus/wordpress-deploy",
   "description": "CI/CD for wordpress",
   "type": "library",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "license": "MIT",
   "autoload": {
     "psr-4": {
@@ -14,16 +14,14 @@
       "name": "Yasmine Husain"
     }
   ],
-  "require": {
+  "bin": [
+    "./bin/wpd"
+  ],
+  "require-dev": {
+    "phpunit/phpunit": "^13.0",
     "symfony/console": "^8.0",
     "phpseclib/phpseclib": "~3.0",
     "symfony/process": "^8.0"
-  },
-  "bin": [
-    "./bin/yas-wpd"
-  ],
-  "require-dev": {
-    "phpunit/phpunit": "^13.0"
   },
   "scripts": {
     "test": "vendor/bin/phpunit"

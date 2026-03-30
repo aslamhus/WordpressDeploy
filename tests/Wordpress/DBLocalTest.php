@@ -50,10 +50,10 @@ final class DBLocalTest extends TestCase
         $this->dbLocal->export($dockerTmp . DIRECTORY_SEPARATOR . $testFileName, $output, $exit_code);
         // check for db export file at docker path /tmp/Docker
         $p = Process::run(['./vendor/bin/whr', 'exec', 'bash', '-c', "ls $dockerTmp | grep $testFileName"]);
-        $this->assertTrue($p, 'Failed to export DB to docker container.' . PHP_EOL . '-> Check that your container is running and/or the docker.docker_tmp_volume property in your .yaswpd.json file. Docker tmp volume:  ' . $dockerTmp);
+        $this->assertTrue($p, 'Failed to export DB to docker container.' . PHP_EOL . '-> Check that your container is running and/or the docker.docker_tmp_volume property in your wpd.json file. Docker tmp volume:  ' . $dockerTmp);
         // check for db export file at local mount point path ./Docker/Data/tmp
         $localTmp = $this->settings->docker->getTmpDirMount();
         $p = Process::fromShellCommandLine("ls $localTmp | grep $testFileName", $output);
-        $this->assertTrue($p, 'DB export was not found in local project root Docker/Data/tmp.' . PHP_EOL . '-> Check the docker.docker_tmp_volume, local.root, local.public settings in your .yaswpd.json file');
+        $this->assertTrue($p, 'DB export was not found in local project root Docker/Data/tmp.' . PHP_EOL . '-> Check the docker.docker_tmp_volume, local.root, local.public settings in your wpd.json file');
     }
 }
