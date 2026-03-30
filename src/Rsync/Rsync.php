@@ -34,12 +34,13 @@ class Rsync
      * 
      * @param mixed $src 
      * @param mixed $dest 
-     * @param int $timeout 
-     * @param bool $dry_run 
+     * @param ?RsyncOptions
+     * @param ?OutputInterface
+     * @param mixed $cwd - the current working directory of the process
      * @return true 
      * @throws ProcessFailedException 
      */
-    public static function run($src, $dest, ?RsyncOptions $options = null, ?OutputInterface $output = null)
+    public static function run($src, $dest, ?RsyncOptions $options = null, ?OutputInterface $output = null, $cwd = null)
     {
         $progressBar = null;
         // init the options
@@ -52,18 +53,23 @@ class Rsync
         // build the command
         $rsyncCmd = [
             'rsync',
-            '-avP',
+            '-aP',
             "$src",
             "$dest"
         ];
-
-        if ($options->isDryRun()) {
-            array_shift($rsyncCmd);
-            $rsyncCmd = ['rsync', '--dry-run', ...$rsyncCmd];
+        // check for excludes
+        if ($options->hasExcludes()) {
+            $rsyncCmd = self::insertIntoCommandArray(self::getExcludes($options->exclude), $rsyncCmd);
         }
 
+        if ($options->isDryRun()) {
+            $rsyncCmd = self::insertIntoCommandArray(['--dry-run'], $rsyncCmd);
+        }
+
+
+
         // init the process
-        $process = new Process($rsyncCmd);
+        $process = new Process($rsyncCmd, $cwd);
         $process->setTimeout($options->getTimeout()); // optional: set timeout in seconds (default is 60s)
         if (isset($output)) {
             $progressBar = new ProgressBar($output, $units = 50);
@@ -72,15 +78,15 @@ class Rsync
 
             // show rsync progress from buffer
             function (string $type, string $buffer) use ($progressBar): void {
-                if (isset($progressBar)) {
-                    self::handleProgressBarProgress($type, $buffer);
+                // if (isset($progressBar)) {
+                //     self::handleProgressBarProgress($type, $buffer);
+                // } else {
+                if (Process::ERR === $type) {
+                    echo 'ERR: ' . $buffer;
                 } else {
-                    if (Process::ERR === $type) {
-                        echo 'ERR: ' . $buffer;
-                    } else {
-                        echo $buffer;
-                    }
+                    echo $buffer;
                 }
+                // }
             }
         );
 
@@ -91,6 +97,19 @@ class Rsync
 
         echo ($process->getOutput());
         return true;
+    }
+
+    private static function insertIntoCommandArray(array $insertCmds, array $rsyncCmd)
+    {
+        array_shift($rsyncCmd);
+        return ['rsync', ...$insertCmds, ...$rsyncCmd];
+    }
+
+    private static function getExcludes(array $exclude): array
+    {
+        return array_map(function ($e) {
+            return "--exclude=$e";
+        }, $exclude) ?? [];
     }
 
     public static function handleProgressBarProgress(string $type, string $buffer) {}

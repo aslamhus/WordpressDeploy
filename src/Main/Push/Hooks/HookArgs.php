@@ -26,8 +26,9 @@ class HookArgs extends AbstractArraySettings
     public SymfonyStyle $io;
     public string $dbExportFilename;
     public string $archiveFilename;
+    public string $deployIgnore;
 
-    public function __construct(Env $env, Settings $settings, EnvSettings $remote, PushOptions $options, OutputInterface $output, InputInterface $input, SymfonyStyle $io, string $dbExportFilename, string $archiveFilename)
+    public function __construct(Env $env, Settings $settings, EnvSettings $remote, PushOptions $options, OutputInterface $output, InputInterface $input, SymfonyStyle $io, string $dbExportFilename, string $archiveFilename, string $deployIgnore)
     {
         $this->env = $env;
         $this->settings = $settings;
@@ -38,5 +39,6 @@ class HookArgs extends AbstractArraySettings
         $this->io = $io;
         $this->dbExportFilename = $dbExportFilename;
         $this->archiveFilename = $archiveFilename;
+        $this->deployIgnore = $deployIgnore;
     }
 }

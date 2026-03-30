@@ -42,6 +42,51 @@ vendor/bin/yas-wpd push <env> --no-composer --no-flush-cache
 
 ```
 
+## Deploy ignore files
+
+Add a .deployginore file to your project root to exclude files in your public directory from deployment
+
+For example:
+
+```bash
+*.tar.gz
+wp-content
+/test.txt
+second-test.txt
+```
+
+The above will ignore:
+
+- all files with ".tar.gz" extension in all directories,
+- all directories of wp-content
+- test.txt in the root directory only
+- second-test.txt in all directories
+
+### Unexpected behaviour
+
+When using the `upload_type` "archive" instead of rsync in your .yaswpd.json, your deployignore patterns may produce slightly unexpected results. For example:
+
+```bash
+/*.tar.gz
+test.txt
+```
+
+You might expect `/*.tar.gz` to only target files with extension .tar.gz in the root directory, but it will still target all files with that extension. Wildcards can't be anchored to the root directory. This is a quirk of both `gnutar` and `bsdtar`, which are used to archive your site before deploying. In this case, it's recommended to use explicit paths instead of wildcards.
+
+## Choosing between rsync and archive for deployment
+
+You can choose between rsyncing each file in public to your remote site, or archiving the public directory, pushing it to remote and then unzipping it on the server. The latter method is good for large scale changes, like uploading a new site for the first time. The former is more efficient when you only want to upload a few file changes and not the entire site.
+
+Both methods will ignore files you set in your `.deployginore` (see above).
+
+To change between `rsync` / `archive`, update your `upload_type` property in your `.yaswpd.json` file.
+
+```json
+{
+  "upload_type": "rsync"
+}
+```
+
 ## Test against your .yaswpd.json file
 
 You can run tests against your own settings. From your project root, run:
@@ -146,7 +191,7 @@ exit(1);
 
 ### Exit code
 
-If your custom script exits with a code any other than 0, push will throw an error and stop.
+If your custom script exits with a code any other than 0,the push script will throw an error and stop.
 
 ### Access .yaswpd.json settings in your script
 

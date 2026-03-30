@@ -7,6 +7,7 @@ class RsyncOptions
 
     public int $timeout;
     public string $dry_run;
+    public array $exclude;
 
     /**
      * 
@@ -17,6 +18,7 @@ class RsyncOptions
     {
         $this->timeout = $options['timeout'] ?? 3600;
         $this->dry_run = $options['dry_run'] ?? false;
+        $this->exclude = $options['exclude'] ?? [];
     }
 
     public function isDryRun(): bool
@@ -27,5 +29,10 @@ class RsyncOptions
     public function getTimeout(): int
     {
         return $this->timeout;
+    }
+
+    public function hasExcludes(): bool
+    {
+        return !empty($this->exclude);
     }
 }

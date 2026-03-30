@@ -12,10 +12,12 @@ use Yashus\WPD\Main\AbstractMain;
 use Yashus\WPD\Main\Push\Hooks\ClearCacheHook;
 use Yashus\WPD\Main\Push\Hooks\ComposerPushHook;
 use Yashus\WPD\Main\Push\Hooks\HookArgs;
+use Yashus\WPD\Main\Push\Hooks\HookInterface;
 use Yashus\WPD\Main\Push\Hooks\PostPushHooks;
 use Yashus\WPD\Main\Push\Hooks\PrePushHooks;
 use Yashus\WPD\Main\Push\Hooks\PushArchiveHook;
 use Yashus\WPD\Main\Push\Hooks\PushDBHook;
+use Yashus\WPD\Main\Push\Hooks\RsyncSiteHook;
 use Yashus\WPD\SSH\SSH;
 use Yashus\WPD\Types\Push\PushOptions;
 use Yashus\WPD\Types\YASWPD\EnvSettings;
@@ -31,7 +33,7 @@ class Push extends AbstractMain
     private EnvSettings $remote;
     private string $release_id;
     private string $src;
-    private string $deploy_ignore;
+    private string $deployIgnore;
     private string $dest;
     private string $db;
     private string $remoteUrl;
@@ -39,7 +41,7 @@ class Push extends AbstractMain
     private string $archiveFilename;
     private PushOptions $options;
     private PushDBHook $pushDBHook;
-    private PushArchiveHook $pushArchiveHook;
+    private HookInterface $pushArchiveHook;
 
     public function __construct(Env $env, Settings $settings, SSH $ssh, PushOptions $options, InputInterface $input,  OutputInterface $output, SymfonyStyle $io)
     {
@@ -57,9 +59,9 @@ class Push extends AbstractMain
         $this->dest = $this->remote->getPublicPath();
         $this->db = $this->remote['db'];
         $this->remoteUrl = $this->remote['url'];
-        $this->deploy_ignore =  $this->settings->local['root'] . DIRECTORY_SEPARATOR .  ".deployignore";
-        if (!file_exists($this->deploy_ignore)) {
-            throw new \Exception("Could not find deploy ignore file at '{$this->deploy_ignore}'. Please make sure you add a .deployginore file in your root directory.");
+        $this->deployIgnore =  $this->settings->local['root'] . DIRECTORY_SEPARATOR .  ".deployignore";
+        if (!file_exists($this->deployIgnore)) {
+            throw new \Exception("Could not find deploy ignore file at '{$this->deployIgnore}'. Please make sure you add a .deployginore file in your root directory.");
         }
         $this->dbExportFilename = $this->release_id . '.sql';
         $this->archiveFilename = $this->release_id . '.tar.gz';
@@ -77,14 +79,14 @@ class Push extends AbstractMain
         }
 
 
-        $hookArgs = new HookArgs($this->env,  $this->settings, $this->remote, $this->options, $this->output, $this->input, $this->io, $this->dbExportFilename, $this->archiveFilename);
+        $hookArgs = new HookArgs($this->env,  $this->settings, $this->remote, $this->options, $this->output, $this->input, $this->io, $this->dbExportFilename, $this->archiveFilename, $this->deployIgnore);
         // run any pre push hooks
         if ($this->options->prePushHooks) {
             (new PrePushHooks($hookArgs))->run();
         }
-        // 1. archive and push site
+        // 1. push archive or rsync files 
         if ($this->options->pushArchive) {
-            $this->pushArchiveHook = (new PushArchiveHook($this->ssh, $hookArgs))->run();
+            $this->pushArchive($hookArgs)->run();
         }
         // 2. export and push db
         if ($this->options->pushDb) {
@@ -102,6 +104,19 @@ class Push extends AbstractMain
             (new PostPushHooks($hookArgs))->run();
         }
         $this->printSuccessMsg();
+    }
+
+    private function pushArchive($hookArgs): HookInterface
+    {
+        switch ($this->settings->upload_type) {
+            case 'rsync':
+                return new RsyncSiteHook($this->ssh, $hookArgs);
+            case 'archive':
+
+                return new  PushArchiveHook($this->ssh, $hookArgs);
+            default:
+                throw new \Exception("Unknown upload type " . $this->settings->upload_type . ". Expected 'rsync' or 'archive'");
+        }
     }
 
     private function interactToGetPushOptions()
@@ -156,6 +171,6 @@ class Push extends AbstractMain
         $this->output->writeln("Cleaning up....");
 
         isset($this->pushArchiveHook) && $this->pushArchiveHook->cleanup();
-        isset($this->pushArchiveHook) && $this->pushDBHook->cleanup();
+        isset($this->pushDBHook) && $this->pushDBHook->cleanup();
     }
 }

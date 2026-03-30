@@ -24,4 +24,12 @@ class Utils
         }
         return  $path;
     }
+
+    public static function getExcludesFromFile(string $filepath): array
+    {
+        if (!file_exists($filepath)) {
+            throw new \Exception("Archive exclude file " . $filepath . " does not exist");
+        }
+        return array_filter(explode(PHP_EOL, file_get_contents($filepath)), 'strlen');
+    }
 }

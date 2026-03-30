@@ -21,6 +21,7 @@ abstract class AbstractHook extends AbstractMain implements HookInterface
     protected PushOptions $options;
     protected string $dbExportFilename;
     public string $archiveFilename;
+    public string $deployIgnore;
 
     public function __construct(HookArgs $hookArgs)
     {
@@ -32,6 +33,7 @@ abstract class AbstractHook extends AbstractMain implements HookInterface
         $this->output = $hookArgs->output;
         $this->dbExportFilename = $hookArgs->dbExportFilename;
         $this->archiveFilename = $hookArgs->archiveFilename;
+        $this->deployIgnore = $hookArgs->deployIgnore;
     }
     protected function hasHooks(string $hookName)
     {

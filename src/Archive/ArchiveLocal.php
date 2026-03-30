@@ -4,7 +4,13 @@ namespace Yashus\WPD\Archive;
 
 use Symfony\Component\Process\Exception\ProcessFailedException;
 use Yashus\WPD\Process\Process;
+use Yashus\WPD\Utils\Utils;
 
+
+/**
+ * TODO: get tar type
+ * @package Yashus\WPD\Archive
+ */
 class ArchiveLocal
 {
 
@@ -12,6 +18,8 @@ class ArchiveLocal
     private string $filename;
     private string $archiveFilepath;
     private array|string $exclude;
+    private string $tarType = 'bsdtar';
+    public string $tarCmd;
 
     public function __construct(string $src, string $filename, array|string $exclude = [])
     {
@@ -26,8 +34,9 @@ class ArchiveLocal
         $this->exclude = $exclude ?? [];
         // if a file is supplied, convert file contents into an array
         if (!is_array($this->exclude) && gettype($this->exclude) == 'string') {
-            $this->exclude = $this->getExcludesFromFile();
+            $this->exclude = Utils::getExcludesFromFile($exclude);
         }
+        $this->tarType = $this->getTarType();
     }
 
     public function previousArchiveExists(): bool
@@ -44,6 +53,14 @@ class ArchiveLocal
     public function getArchiveFilepath(): string
     {
         return $this->archiveFilepath . DIRECTORY_SEPARATOR . $this->filename;
+    }
+
+    public function getTarCmd(): string
+    {
+        if (!isset($this->tarCmd)) {
+            throw new \Exception("tar command has not run yet");
+        }
+        return $this->tarCmd;
     }
 
 
@@ -65,13 +82,10 @@ class ArchiveLocal
 
 
         $archiveFilename = $this->filename;
-        $tarCmd = ['tar',   ...$this->getExcludes(),   '--no-xattrs', '-czf', $archiveFilename, "./",];
-
+        $tarCmd = ['tar',   ...$this->getExcludes(),   '--no-xattrs', '-czf', '../' . $archiveFilename, "./",];
+        $this->tarCmd = implode(' ', $tarCmd);
         $p =  Process::run($tarCmd, $this->src, $output, $exit_code, false, ['COPYFILE_DISABLE' => 1]);
-        if ($p) {
-            // move archive to working directory out of src
-            Process::run(['mv', $archiveFilename, getcwd()], $this->src);
-        }
+
         return getcwd() . DIRECTORY_SEPARATOR . $archiveFilename;
     }
 
@@ -84,17 +98,27 @@ class ArchiveLocal
     private function getExcludes(): array
     {
         return array_map(function ($exclude) {
+            // replace leading slash with ^ for bsdtar and ./ for gtar
+            $replace = "^";
+            switch ($this->tarType) {
+                case 'bsdtar':
+                    $replace =  '^';
+                    break;
+                case 'gtar':
+                    $replace = './';
+                    break;
+            }
+
+            $firstChar = substr($exclude, 0, 1);
+
+            if ($firstChar == '/') {
+                $exclude = substr_replace($exclude, $replace, 0, 1);
+            }
             return "--exclude=$exclude";
         }, $this->exclude) ?? [];
     }
 
-    private function getExcludesFromFile(): array
-    {
-        if (!file_exists($this->exclude)) {
-            throw new \Exception("Archive exclude file " . $this->exclude . " does not exist");
-        }
-        return array_filter(explode(PHP_EOL, file_get_contents($this->exclude)), 'strlen');
-    }
+
 
     private function removeExt(string $filename): string
     {
@@ -119,5 +143,11 @@ class ArchiveLocal
     {
         $unzipCmd = ['tar', '-xzf', $filename];
         return Process::run($unzipCmd, $cwd, $output, $exit_code);
+    }
+
+    private function getTarType()
+    {
+        $isBsdTar =  Process::fromShellCommandLine('tar --version | grep bsdtar');
+        return $isBsdTar ? 'bsdtar' : 'gnutar';
     }
 }

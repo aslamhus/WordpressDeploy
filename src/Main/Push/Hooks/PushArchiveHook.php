@@ -33,7 +33,7 @@ class PushArchiveHook extends AbstractHook
 
     public function run(): PushArchiveHook
     {
-        Console::header('Push Site Files');
+        Console::header('Push Site Files (Archive)');
 
 
 
@@ -75,7 +75,7 @@ class PushArchiveHook extends AbstractHook
         $this->output->writeln('<comment>Archiving wordpress site (' . basename($this->settings->local->getPublicPath()) . ')</comment>');
         $archive = new ArchiveLocal($src, $this->archiveFilename, './.deployignore');
         // check if archive exists
-        if ($archive->previousArchiveExists()) {
+        if ($this->options->interactive && $archive->previousArchiveExists()) {
             if ($archive->verifyIntegrity($this->archiveFilename)) {
                 $this->output->writeln("A previous archive with the name {$this->archiveFilename} already exists.");
                 if (!Console::confirm("Would you like to overwrite it?")) {
@@ -85,6 +85,9 @@ class PushArchiveHook extends AbstractHook
         }
         // create the archive
         $archive->create($output, $exit_code);
+        // output the tar command
+        $this->output->writeln("Tar command: " . $archive->getTarCmd());
+        // print success message
         if (!empty($archivePath)) {
             $this->output->writeln('<fg=green>✔️ site archived </>');
         }
