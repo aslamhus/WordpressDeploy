@@ -1,13 +1,13 @@
 # WordpressDeploy
 
-A composer package to help you pull and push your wordpress site with a handy CLI tool `yas-wpd` (YAS-WordPress-Deploy)
+A composer package to help you pull and push your wordpress site with a handy CLI tool `wpd` (**W**ord**P**ress-**D**eploy)
 
 ## Push
 
 To perform a push:
 
 ```bash
-vendor/bin/yas-wpd push <env>
+vendor/bin/wpd push <env>
 ```
 
 Where `env` is `staging` or `production`
@@ -17,30 +17,30 @@ Where `env` is `staging` or `production`
 ```bash
 # Default push
 # You will be asked interactively if you'd like to push wp-content, the database, composer (if set), and whether you'd like to flush the cache
-vendor/bin/yas-wpd push <env>
+vendor/bin/wpd push <env>
 # Push without interaction. Assumes you want to push everything (wp-content,database,composer and flush cache)
-vendor/bin/yas-wpd push <env> --no-interaction
+vendor/bin/wpd push <env> --no-interaction
 
 ## ‼️ Beware, setting any of the following options will disable interaction
 ## Push only wp-content
-vendor/bin/yas-wpd push <env> --wp-content
+vendor/bin/wpd push <env> --wp-content
 ## Push only db
-vendor/bin/yas-wpd push <env> --db
+vendor/bin/wpd push <env> --db
 ## Push only composer
-vendor/bin/yas-wpd push <env> --composer
+vendor/bin/wpd push <env> --composer
 ## Flush the cache
-vendor/bin/yas-wpd push <env> --flush-cache
+vendor/bin/wpd push <env> --flush-cache
 ## Push a combination
-vendor/bin/yas-wpd push <env> --wp-content --composer --flush-cache
+vendor/bin/wpd push <env> --wp-content --composer --flush-cache
 
 ## Negate
 ## Alternatively , you can choose to negate certain options
 ## push everything except wp-content
-vendor/bin/yas-wpd push <env> --no-wp-content
+vendor/bin/wpd push <env> --no-wp-content
 ## push everything except db
-vendor/bin/yas-wpd push <env> --no-db
+vendor/bin/wpd push <env> --no-db
 ## push everything except composer and do not flush cache
-vendor/bin/yas-wpd push <env> --no-composer --no-flush-cache
+vendor/bin/wpd push <env> --no-composer --no-flush-cache
 
 ```
 
@@ -49,13 +49,13 @@ vendor/bin/yas-wpd push <env> --no-composer --no-flush-cache
 Pull the database
 
 ```bash
-vendor/bin/yas-wpd pull db
+vendor/bin/wpd pull db
 ```
 
 Pull wp-content
 
 ```bash
-vendor/bin/yas-wpd pull wp-content
+vendor/bin/wpd pull wp-content
 ```
 
 ## Deploy ignore files
@@ -80,7 +80,7 @@ The above will ignore:
 
 ### Unexpected behaviour
 
-When using the `upload_type` "archive" instead of rsync in your .yaswpd.json, your deployignore patterns may produce slightly unexpected results. For example:
+When using the `upload_type` "archive" instead of rsync in your .wpd.json, your deployignore patterns may produce slightly unexpected results. For example:
 
 ```bash
 /*.tar.gz
@@ -95,7 +95,7 @@ You can choose between rsyncing each file in public to your remote site, or arch
 
 Both methods will ignore files you set in your `.deployignore` (see above).
 
-To change between `rsync` / `archive`, update your `upload_type` property in your `.yaswpd.json` file.
+To change between `rsync` / `archive`, update your `upload_type` property in your `wpd.json` file.
 
 ```json
 {
@@ -103,18 +103,18 @@ To change between `rsync` / `archive`, update your `upload_type` property in you
 }
 ```
 
-## Test against your .yaswpd.json file
+## Test against your wpd.json file
 
 You can run tests against your own settings. From your project root, run:
 
 ```bash
-vendor/bin/yas-wpd test <testsuite>
+vendor/bin/wpd test <testsuite>
 ```
 
 List the available tests
 
 ```bash
-vendor/bin/yas-wpd test --list
+vendor/bin/wpd test --list
 ```
 
 Perform a test of your settings json.
@@ -122,19 +122,19 @@ Perform a test of your settings json.
 **_Note: this only tests the structure/type of your settings, not whether the filepaths exists._**
 
 ```bash
-vendor/bin/yas-wpd test settings
+vendor/bin/wpd test settings
 ```
 
 You can get verbose testing output by passing the `-v` option.
 
 ## Assumptions
 
-1. Assumes wordpress directory is in root / public directory. See .yaswpd.json settings.
+1. Assumes wordpress directory is in root / public directory. See wpd.json settings.
 2. Built to work with docker, but can in theory work without a docker container, i.e. in a MAMP / XAMPP environment
 
 ## Inject ENV Files
 
-In your `.yaswpd.json` file, you can specify files that should be updated based on the environment (staging,local,production). See `files` property.
+In your `wpd.json` file, you can specify files that should be updated based on the environment (staging,local,production). See `files` property.
 
 ### Example
 
@@ -182,7 +182,7 @@ The push command has two hooks for custom scripts, `prePush` and `postPush`. Her
 
 ### Example
 
-1. Add scripts to your .yaswpd.json file:
+1. Add scripts to your wpd.json file:
 
 ```json
   ...,
@@ -209,7 +209,7 @@ exit(1);
 
 If your custom script exits with a code any other than 0,the push script will throw an error and stop.
 
-### Access .yaswpd.json settings in your script
+### Access wpd.json settings in your script
 
 ```php
 ##!/usr/bin/env php
@@ -229,7 +229,7 @@ exit;
 
 If you encounter this error, your SSH user does not have sufficient permissions on the host.
 
-Change your SSH host and user settings to a user with the correct permissions. You may need to reset permissions on your server, or you may need to use a different user in your `.yaswpd.json` file who has sufficient permissions (such as root / admin).
+Change your SSH host and user settings to a user with the correct permissions. You may need to reset permissions on your server, or you may need to use a different user in your `wpd.json` file who has sufficient permissions (such as root / admin).
 
 This error is encountered when extracting the tarball of your wp-content files on the host. If you can't change your user to root, your files are most likely still being extracted. You may need to check this manually. If they are, you can ignore the message.
 

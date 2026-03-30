@@ -2,7 +2,7 @@
   "name": "yashus/wordpress-deploy",
   "description": "CI/CD for wordpress",
   "type": "library",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "license": "MIT",
   "autoload": {
     "psr-4": {
@@ -17,7 +17,7 @@
   "bin": [
     "./bin/wpd"
   ],
-  "require-dev": {
+  "require": {
     "phpunit/phpunit": "^13.0",
     "symfony/console": "^8.0",
     "phpseclib/phpseclib": "~3.0",
