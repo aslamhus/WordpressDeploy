@@ -3,6 +3,7 @@
 
 namespace Yashus\WPD\Main\Push\Hooks;
 
+use Symfony\Component\Process\Exception\ProcessFailedException;
 use Yashus\WPD\Env\Env;
 use Yashus\WPD\Types\YASWPD\EnvSettings;
 use Yashus\WPD\Types\YASWPD\Settings;
@@ -32,26 +33,38 @@ abstract class AbstractHook extends AbstractMain implements HookInterface
         $this->dbExportFilename = $hookArgs->dbExportFilename;
         $this->archiveFilename = $hookArgs->archiveFilename;
     }
-
-
-
-    protected function runHookScripts(string $hookName = Hooks::prePush): void
+    protected function hasHooks(string $hookName)
     {
-        if (!isset($this->settings->hooks[$hookName])) return;
+        return isset($this->settings->hooks[$hookName]);
+    }
+
+
+    /**
+     * Run hook scripts
+     * @param string $hookName 
+     * @return null|array 
+     * @throws \ProcessFailedException
+     */
+    protected function runHookScripts(string $hookName = Hooks::prePush): ?array
+    {
+        if (!$this->hasHooks($hookName)) return null;
         $scripts = $this->settings?->hooks[$hookName];
         if (!empty($scripts)) {
-            $this->output->writeln("<comment>Running $hookName scripts</comment>");
             foreach ($scripts as $script) {
                 $scriptPath = getcwd() . DIRECTORY_SEPARATOR . ltrim($script, './');
-                $this->output->writeln("Running $script");
+                $this->output->writeln("<comment>Running $script</comment>");
                 try {
                     Process::run([$scriptPath], null, $output, $exit_code, false, ['settings' => json_encode($this->settings)]);
                 } catch (\Exception $e) {
-                    throw new \Exception("Error running $hookName script '$script'", $exit_code, $e);
+                    throw $e;
+                    // throw new \Exception("Error running $hookName script '$script'", $exit_code, $e);
                 }
-                $this->output->write("\n" . $output . "\n");
+                $this->output->write($output);
                 $this->output->writeln("✔️ Executed $script");
             }
         }
+
+        $this->output->writeln('Succesfully ran ' . count($scripts) . ' script(s)');
+        return $scripts;
     }
 }

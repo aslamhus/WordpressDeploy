@@ -42,40 +42,26 @@ class CreatePushCommand
         #[Option('push wp-content')] ?bool $wpContent = null,
         #[Option('push db')] ?bool $db = null,
         #[Option('push composer')] ?bool $composer = null,
-        #[Option('flush cache after pushing')] ?bool $flushCache = null
+        #[Option('flush cache after pushing')] ?bool $flushCache = null,
+        #[Option('run any pre push hooks')] ?bool $prePushHooks = null,
+        #[Option('run any post push hooks')] ?bool $postPushHooks = null,
+
     ): int {
         // init env type
         $env = new Env($env);
         // verify type
-
-
-
         // init PushOptions
         $options = new PushOptions([
-            'shouldPushDb' => $db,
-            'shouldPushArchive' => $wpContent,
-            'shouldPushComposer' => $composer,
-            'shouldFlushCache' => $flushCache
+            'pushDb' => $db,
+            'pushArchive' => $wpContent,
+            'pushComposer' => $composer,
+            'flushCache' => $flushCache,
+            'prePushHooks' => $prePushHooks,
+            'postPushHooks' => $postPushHooks
         ], $input->isInteractive());
 
 
-        // if any options have been set, do not interact
-        if (isset($wpContent) || isset($db) || isset($composer) || isset($flushCache)) {
-            $options->setInteraction(false);
-        }
-        // if no push options have been set, assume all are true
-        if (!isset($wpContent) &&  !isset($db) && !isset($composer) && !isset($flushCache)) {
-            $options->setShouldPushArchive(true);
-            $options->setShouldPushDb(true);
-            $options->setShouldPushComposer(true);
-            $options->setShouldFlushCache(true);
-        }
-        // disable interaction if no interaction is specifically set via --no-interaction
-        if ($input->isInteractive() === false) {
-            $options->setInteraction(false);
-        }
-        echo json_encode($options, JSON_PRETTY_PRINT);
-        exit;
+
 
 
         // handle sign int

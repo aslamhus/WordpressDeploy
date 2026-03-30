@@ -63,6 +63,6 @@ class Console
     public  function header(string $headerTitle)
     {
         $this->output->writeln("");
-        $this->io->section(strtoupper($headerTitle));
+        $this->io->section($headerTitle);
     }
 }

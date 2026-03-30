@@ -6,4 +6,6 @@ interface HookInterface
 {
 
     public function run(): self;
+
+    public function cleanup(): void;
 }

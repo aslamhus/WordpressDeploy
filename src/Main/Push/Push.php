@@ -69,53 +69,76 @@ class Push extends AbstractMain
 
     public function run()
     {
-        $this->printPushTypeTitle();
+        $this->printTitle();
         DockerUtils::verifyContainerIsRunning();
         if (!$this->verifyPushSettings())  return;
-        if ($this->options->interaction) {
+        if ($this->options->interactive) {
             $this->interactToGetPushOptions();
         }
+
+
         $hookArgs = new HookArgs($this->env,  $this->settings, $this->remote, $this->options, $this->output, $this->input, $this->io, $this->dbExportFilename, $this->archiveFilename);
         // run any pre push hooks
-        (new PrePushHooks($hookArgs))->run();
+        if ($this->options->prePushHooks) {
+            (new PrePushHooks($hookArgs))->run();
+        }
         // 1. archive and push site
-        if ($this->options->shouldPushArchive) {
+        if ($this->options->pushArchive) {
             $this->pushArchiveHook = (new PushArchiveHook($this->ssh, $hookArgs))->run();
         }
         // 2. export and push db
-        if ($this->options->shouldPushDb) {
+        if ($this->options->pushDb) {
             $this->pushDBHook = (new PushDBHook($this->ssh, $hookArgs))->run();
         }
         // 3. push and install composer
-        if ($this->options->shouldPushComposer) {
+        if ($this->options->pushComposer) {
             (new ComposerPushHook($this->ssh, $hookArgs))->run();
         }
         // 4. clear cache
-        if ($this->options->shouldFlushCache) {
+        if ($this->options->flushCache) {
             (new ClearCacheHook($this->ssh, $hookArgs))->run();
         }
-        // run any post push hooks
-        (new PostPushHooks($hookArgs))->run();
-        $this->output->writeln("🎉 " . $this->settings->project . " was pushed to {$this->env} successfully!");
+        if ($this->options->postPushHooks) {
+            (new PostPushHooks($hookArgs))->run();
+        }
+        $this->printSuccessMsg();
     }
 
     private function interactToGetPushOptions()
     {
-        $this->options->shouldPushArchive = Console::confirm("Do you want to push wp-content to the {$this->env} server?");
-        $this->options->shouldPushDb = Console::confirm("Do you want to push the database to the {$this->env} server?");
-        $this->options->shouldPushComposer = Console::confirm("Do you want to push composer {$this->env} server?");
-        if ($this->options->shouldPushDb || $this->options->shouldPushArchive) {
-            $this->options->shouldFlushCache = Console::confirm("Do you want to flush the wordpress cache after pushing? {$this->env} server?");
+        $this->options->pushArchive = Console::confirm("Do you want to push wp-content to the {$this->env} server?");
+        $this->options->pushDb = Console::confirm("Do you want to push the database to the {$this->env} server?");
+        $this->options->pushComposer = Console::confirm("Do you want to push and install composer.json to the {$this->env} server?");
+        if ($this->options->pushDb || $this->options->pushArchive) {
+            $this->options->flushCache = Console::confirm("Do you want to flush the wordpress cache after pushing to the {$this->env} server?");
         }
     }
 
-    private function printPushTypeTitle()
+    private function printTitle()
     {
         $this->io->title(strtoupper("PUSHING to " . $this->env->outputTitle()));
     }
 
+    private function printSuccessMsg()
+    {
+        $this->output->writeln("");
+        $this->output->writeln("🎉 <info>" . $this->settings->project . " was pushed to {$this->env} successfully!</info>");
+        foreach ($this->options as $option => $shouldPerform) {
+            if ($shouldPerform) {
+                if ($option == 'interactive') continue;
+                // get option title by splitting camel case array key, i.e. 'pushArchive'
+                $split = preg_split('/(?=[A-Z])/', $option);
+                // make first word past tense
+                $split = array_map('strtolower', $split);
+                $this->output->writeln('✔️ ' . implode(' ', $split));
+            }
+        }
+    }
+
     private function verifyPushSettings()
     {
+        // skip when --no-interaction option set
+        if (!$this->options->interactive) return true;
         $this->output->writeln('Please verify your settings');
         $this->io->definitionList(
             ['src' => $this->src],
@@ -131,11 +154,8 @@ class Push extends AbstractMain
         $this->output->writeln("");
         $this->output->writeln("<error>Cancelled.</error>");
         $this->output->writeln("Cleaning up....");
-        if ($this->pushArchiveHook->hasInjectedEnvFiles) {
-            $this->pushArchiveHook->injectEnvFiles(['revert' => true]);
-        }
-        if ($this->pushDBHook->hasSearchReplacedDb) {
-            $this->pushDBHook->searchReplaceDB(['revert' => true]);
-        }
+
+        isset($this->pushArchiveHook) && $this->pushArchiveHook->cleanup();
+        isset($this->pushArchiveHook) && $this->pushDBHook->cleanup();
     }
 }

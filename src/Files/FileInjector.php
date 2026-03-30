@@ -24,7 +24,7 @@ class FileInjector
 
     public function run(Env $env)
     {
-        $this->output->writeln("<comment>🗂️ Injecting env files ($env)</comment>");
+        $this->output->writeln("<comment>🗂️ Injecting env files -> $env</comment>");
         foreach ($this->settings->files as $file) {
             /** @var FileSettings $file */
             if ($this->inject($file, $env)) {

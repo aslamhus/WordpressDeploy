@@ -13,10 +13,13 @@ vendor/bin/yas-wpd push <env>
 ### Push options
 
 ```bash
+# Default push
+# You will be asked interactively if you'd like to push wp-content, the database, composer (if set), and whether you'd like to flush the cache
+vendor/bin/yas-wpd push <env>
 # Push without interaction. Assumes you want to push everything (wp-content,database,composer and flush cache)
 vendor/bin/yas-wpd push <env> --no-interaction
 
-## ‼️ Beware Setting any of the following options will disable interaction
+## ‼️ Beware, setting any of the following options will disable interaction
 ## Push only wp-content
 vendor/bin/yas-wpd push <env> --wp-content
 ## Push only db
@@ -29,7 +32,7 @@ vendor/bin/yas-wpd push <env> --flush-cache
 vendor/bin/yas-wpd push <env> --wp-content --composer --flush-cache
 
 ## Negate
-## All the above options can be negated
+## Alternatively , you can choose to negate certain options
 ## push everything except wp-content
 vendor/bin/yas-wpd push <env> --no-wp-content
 ## push everything except db

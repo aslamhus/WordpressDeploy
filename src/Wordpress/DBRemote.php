@@ -19,7 +19,7 @@ class DBRemote extends AbstractDB
                 echo \"File $filepath does not exist at \$PWD\"
             fi
             $wpcli db import $filepath
-        ", null, $exit_code);
+        ", $output, $exit_code);
         } catch (\Exception $e) {
             throw new \Exception("Remote DB import failed", $exit_code, $e);
         }
@@ -30,7 +30,7 @@ class DBRemote extends AbstractDB
     {
         $wpcli = $this->getWpCliCommand_asString();
         try {
-            $ssh->exec("cd {$this->wp_dir} && $wpcli db export $filepath", null, $exit_code);
+            $ssh->exec("cd {$this->wp_dir} && $wpcli db export $filepath", $output, $exit_code);
         } catch (\Exception $e) {
             throw new \Exception("Remote DB export failed", $exit_code, $e);
         }
@@ -48,7 +48,7 @@ class DBRemote extends AbstractDB
             else
                 rm {$filepath} || exit 1
             fi
-        ", null, $exit_code);
+        ", $output, $exit_code);
         } catch (\Exception $e) {
             throw new \Exception("Removing remote database failed", $exit_code, $e);
         }

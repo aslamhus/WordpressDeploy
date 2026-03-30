@@ -21,16 +21,19 @@ class PostPushHooks extends AbstractHook
      */
     public function __construct(HookArgs $hookArgs)
     {
-        parent::__construct(...$hookArgs);
+        parent::__construct($hookArgs);
     }
+
+
 
     public function run(): PostPushHooks
     {
-
-
+        $hook = Hooks::postPush;
+        if (!$this->hasHooks($hook)) return $this;
         Console::header('Post-push hooks');
-        // 4. run any custom bash commands (todo much later)
-        $this->runHookScripts(Hooks::postPush);
+        $scripts = $this->runHookScripts($hook);
         return $this;
     }
+
+    public function cleanup(): void {}
 }

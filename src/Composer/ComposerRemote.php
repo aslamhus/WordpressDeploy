@@ -13,32 +13,30 @@ class ComposerRemote
 
     public ComposerSettings $composerSettings;
     public Env $remoteEnv;
+    public ComposerConfig $local;
+    public ComposerConfig $remote;
     public function __construct(ComposerSettings $composerSettings, Env $remoteEnv)
     {
         $this->composerSettings = $composerSettings;
         $this->remoteEnv = $remoteEnv;
+        $this->local = $this->composerSettings->getEnvConfig(new Env('local'));
+        $this->remote = $this->composerSettings->getEnvConfig($this->remoteEnv);
     }
 
-    public function install(SSH $ssh)
+    public function uploadAndInstall(SSH $ssh)
     {
-        // 1. upload composer.json to specified directory
         $this->verifyLocalComposerJsonExists();
-        $localPath = $this->composerSettings->getEnvConfig(new Env('local'))['json'];
-
-        $remotePath = $this->composerSettings->getEnvConfig($this->remoteEnv)['json'];
-        $this->uploadComposerJson($localPath, $remotePath, $ssh);
-        // run composer install on remote
-
-        $this->installComposer($remotePath, $ssh);
+        $this->uploadComposerJson($ssh);
+        $this->installComposer($ssh);
     }
 
-    public function uploadComposerJson(string $localPath, string $remotePath, SSH $ssh)
+    public function uploadComposerJson(SSH $ssh)
     {
         $config = $ssh->getConfig();
         $user = $config['user'];
         $host = $config['host'];
-        $src = $localPath;
-        $dest = "$user@$host:$remotePath";
+        $src = $this->local['json'];
+        $dest = "$user@$host:{$this->remote['json']}";
         return Rsync::run($src, $dest);
     }
 
@@ -71,20 +69,24 @@ class ComposerRemote
      * @param SSH $ssh 
      * @return void 
      */
-    private function installComposer(ComposerConfig $remoteConfig, SSH $ssh)
+    public function installComposer(SSH $ssh)
     {
         $ssh =  $ssh->connect();
-        $remotePath = escapeshellarg($remoteConfig['path']);
+        $remotePath = escapeshellarg(dirname($this->remote['json']));
+        if (empty($remotePath)) {
+            throw new \Exception('Failed to install composer, remote path was empty. Check your .yaswpd.json config');
+        }
         $cmd = implode(" ", [
-            ...$remoteConfig['cmd'], // composer or phar.composer etc.
-            'require',
-            ...$remoteConfig['install'] ?? [],
+            ...$this->remote['cmd'], // composer or phar.composer etc.
+            'update',
+            ...$this->remote['install'] ?? [],
         ]);
 
         try {
-            $ssh->exec("cd $remotePath && $cmd", null, $exit_code);
+            $ssh->exec("cd $remotePath && $cmd", $output, $exit_code);
         } catch (\Exception $e) {
-            throw new \Exception("Composer install failed at $remotePath", $exit_code, $e);
+            throw $e;
+            // throw new \Exception("Composer install failed at $remotePath", $exit_code, $e);
         }
     }
 }

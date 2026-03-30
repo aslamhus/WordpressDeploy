@@ -35,10 +35,10 @@ class WPRemote
         $activate = $activate ? 'activate' : 'deactivate';
         $publicPath = $this->remote->getPublicPath();
         try {
-            $output = $ssh->exec(
+            $ssh->exec(
                 "cd '$publicPath' || exit 1
             {$this->wpcli} --skip-themes --skip-plugins maintenance-mode $activate",
-                null,
+                $output,
                 $exit_code
             );
         } catch (Exception $e) {

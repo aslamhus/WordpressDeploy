@@ -49,15 +49,14 @@ class PushDBHook extends AbstractHook
     {
 
         Console::header('Pushing DB to remote');
-        $this->pushDb();
-        $this->importRemoteDb();
+
         try {
             $this->exportLocalWPDatabase();
             $this->pushDb();
+            $this->importRemoteDb();
+            $this->output->writeln('✔️ Db succesfully pushed');
         } catch (\Exception $e) {
-            if ($this->hasSearchReplacedDb) {
-                $this->dbLocal->searchReplaceLocalDbUrl($this->remote, $this->settings->local);
-            }
+            $this->cleanup();
             throw $e;
         }
         return $this;
@@ -74,6 +73,7 @@ class PushDBHook extends AbstractHook
      */
     public function pushDb(): true
     {
+
         $config = $this->ssh->getConfig();
         $user = $config['user'];
         $host = $config['host'];
@@ -128,7 +128,7 @@ class PushDBHook extends AbstractHook
     private function exportLocalWPDatabase()
     {
 
-        $this->output->writeln('<comment>Preparing and exporting local database</comment>');
+        $this->output->writeln('Preparing and exporting local database');
         // check if previous db export exists
         if (file_exists($this->dbExportPath)) {
             if (!Console::confirm("A database dump with the name {$this->dbExportFilename} already exists. Would you like to overwrite it?")) {
@@ -140,7 +140,7 @@ class PushDBHook extends AbstractHook
         // export db to  the local root or the docker container tmp dir
         $this->exportDB();
         // log success
-        $message = '<fg=green>✔️ Exported local database to ' . $this->dbExportPath . '</>';
+        $message = '✔️ Exported local database to ' . $this->dbExportPath . '';
         if ($this->settings->docker->isUsingDocker()) {
             $message .= ' in docker container';
         }
@@ -162,5 +162,10 @@ class PushDBHook extends AbstractHook
         $this->dbRemote->import($ssh, $this->dbExportFilename);
         $this->dbRemote->remove($ssh, $this->remote->getPublicPath() . DIRECTORY_SEPARATOR . $this->dbExportFilename);
         return true;
+    }
+
+    public function cleanup(): void
+    {
+        $this->searchReplaceDB(['revert' => true]);
     }
 }

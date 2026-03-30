@@ -5,6 +5,7 @@
 namespace Yashus\WPD\Main\Push\Hooks;
 
 use Yashus\WPD\Composer\ComposerRemote;
+use Yashus\WPD\Console\Console;
 use Yashus\WPD\SSH\SSH;
 
 class ComposerPushHook extends AbstractHook
@@ -21,9 +22,21 @@ class ComposerPushHook extends AbstractHook
     public function run(): ComposerPushHook
     {
 
-        if (!isset($this->settings->composer)) return $this;
-        $composerRemote = new ComposerRemote($this->settings->composer, $this->env);
-        $composerRemote->install($this->ssh);
+
+        if (!isset($this->settings->composer)) {
+            return $this;
+        }
+        Console::header('Composer push');
+
+        $composer = new ComposerRemote($this->settings->composer, $this->env);
+        $composer->verifyLocalComposerJsonExists();
+        $this->output->writeln("Pushing composer.json to remote");
+        $composer->uploadComposerJson($this->ssh);
+        $this->output->writeln("installing composer on remote");
+        $composer->installComposer($this->ssh);
+        $this->output->writeln('✔️ Composer succesfully pushed and installed');
         return $this;
     }
+
+    public function cleanup(): void {}
 }

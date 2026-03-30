@@ -3,81 +3,116 @@
 namespace Yashus\WPD\Types\Push;
 
 use JsonSerializable;
-use Yashus\WPD\Types\YASWPD\AbstractArraySettings;
 
 class PushOptions implements JsonSerializable
 {
 
-    public bool $shouldPushDb;
-    public bool $shouldPushArchive;
-    public bool $shouldPushComposer;
-    public bool $shouldFlushCache;
-    public bool $interaction;
+    public bool $pushDb;
+    public bool $pushArchive;
+    public bool $pushComposer;
+    public bool $flushCache;
+    public bool $prePushHooks;
+    public bool $postPushHooks;
+    public bool $interactive;
     private array $data;
 
     public function __construct(array $params, bool $isInteractive)
     {
-        $this->shouldPushDb = $params['shouldPushDb'] ?? false;
-        $this->shouldPushArchive = $params['shouldPushArchive'] ?? false;
-        $this->shouldPushComposer = $params['shouldPushComposer'] ?? false;
-        $this->shouldFlushCache = $params['shouldFlushCache'] ?? false;
-        $this->interaction = $params['interaction'] ?? false;
-        // push all set properties to data array for json serialization
-        foreach (get_class_vars(self::class) as $key => $value) {
-            if (!isset($this->{$key}) || $key == 'data') continue;
-            $this->data[$key] = $this->{$key};
+        // if one parameter is set to false, (i.e. --no-db, set all default values to true)
+        $this->setDefaultPropertyValues($params, $isInteractive);
+        // set the parameters
+        foreach ($params as $key => $value) {
+            if (!is_null($value)) $this->{$key} = $value;
         }
     }
 
-    public function setShouldPushDb(bool $value)
+    /**
+     * Set the default property values depending on arguments
+     * if using negatable arguments such as '--no-db' then default all properties to true
+     * otherwise default all to false
+     * @return void 
+     */
+    private function setDefaultPropertyValues(array $params, bool $isInteractive)
     {
-        $this->shouldPushDb = $value;
+        // if no push options have been set, assume all are true
+        $this->interactive = $isInteractive;
+        $noParamsAreSet = $this->noParamsAreSet($params);
+        $default = $this->hasNegatableValue($params) || $noParamsAreSet ? true : false;
+        foreach (get_class_vars(self::class) as $key => $value) {
+            if ($key === 'data' || $key === 'interactive') continue;
+            $this->{$key} = $default;
+        }
+        // disable interaction when options have been set
+        if (!$noParamsAreSet) {
+            $this->interactive = false;
+        }
     }
 
-    public function setShouldPushArchive(bool $value)
+    private function hasNegatableValue($params): bool
     {
-        $this->shouldPushArchive = $value;
-    }
-
-    public function setShouldPushComposer(bool $value)
-    {
-        $this->shouldPushComposer = $value;
-    }
-
-    public function setShouldFlushCache(bool $value)
-    {
-        $this->shouldFlushCache = $value;
-    }
-    public function setInteraction(bool $interaction)
-    {
-        $this->interaction = $interaction;
+        return !empty(array_filter($params, function ($value) {
+            return $value === false;
+        }));
     }
 
 
-
-    public function getShouldPushDb(): bool
+    private function noParamsAreSet($params)
     {
-        return $this->shouldPushDb;
+        return empty(array_filter($params, function ($p) {
+
+            return isset($p);
+        }));
+    }
+
+    public function setPushDb(bool $value)
+    {
+        $this->pushDb = $value;
+    }
+
+    public function setPushArchive(bool $value)
+    {
+        $this->pushArchive = $value;
+    }
+
+    public function setPushComposer(bool $value)
+    {
+        $this->pushComposer = $value;
+    }
+
+    public function setflushCache(bool $value)
+    {
+        $this->flushCache = $value;
+    }
+    public function setInteraction(bool $interactive)
+    {
+        $this->interactive = $interactive;
     }
 
 
-    public function getShouldPushArchive(): bool
+
+    public function getpushDb(): bool
     {
-        return $this->shouldPushArchive;
-    }
-    public function getShouldPushComposer(): bool
-    {
-        return $this->shouldPushComposer;
+        return $this->pushDb;
     }
 
-    public function getShouldFlushCache(): bool
+
+    public function getpushArchive(): bool
     {
-        return $this->shouldFlushCache;
+        return $this->pushArchive;
+    }
+    public function getpushComposer(): bool
+    {
+        return $this->pushComposer;
     }
 
-    public function getInteraction(): bool
+    public function getFlushCache(): bool
     {
-        return $this->interaction;
+        return $this->flushCache;
+    }
+
+    public function getInteractive(): bool
+    {
+        return $this->interactive;
     }
 
     public function jsonSerialize(): mixed

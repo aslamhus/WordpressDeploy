@@ -27,32 +27,27 @@ class PushArchiveHook extends AbstractHook
     {
         parent::__construct($hookArgs);
         $this->fileInjector = new FileInjector($this->settings, $this->output);
+        $this->ssh = $ssh;
     }
 
 
     public function run(): PushArchiveHook
     {
-        Console::header('Pushing to remote');
-        // 1. optionally archive / upload remote
-        if ($this->options->shouldPushArchive) {
-            // inject env files here
-            $archiveFilepath = $this->archive();
-            // inject them back after
-            $this->pushArchiveToRemote($archiveFilepath);
-            $this->unzipArchiveOnRemote();
-        }
+        Console::header('Push Site Files');
+
+
 
         try {
-            if ($this->options->getShouldPushArchive()) {
 
-                // check injected wp-config matches env database
-                $this->verifyWPConfigHasCorrectDB();
-            }
+            $this->injectEnvFiles();
+            $archiveFilepath = $this->archive();
+            $this->verifyWPConfigHasCorrectDB();
+            $this->pushArchiveToRemote($archiveFilepath);
+            $this->unzipArchiveOnRemote();
+            $this->injectEnvFiles(['revert' => true]);
+            $this->output->writeln("✔️ Archive succesfully pushed");
         } catch (\Exception $e) {
-            // 2. reset env files to their local content
-            if ($this->hasInjectedEnvFiles) {
-                $this->injectEnvFiles(['revert' => true]);
-            }
+            $this->cleanup();
             throw $e;
         }
         return $this;
@@ -64,7 +59,7 @@ class PushArchiveHook extends AbstractHook
             throw new \Exception('injectEnvFiles argument must be null, or include an array with boolean revert property');
         }
         $revert = $options['revert'];
-        $this->fileInjector->run($revert ? $this->env : new Env('local'));
+        $this->fileInjector->run($revert ?  new Env('local') : $this->env);
         $this->hasInjectedEnvFiles = !$revert;
     }
 
@@ -82,7 +77,8 @@ class PushArchiveHook extends AbstractHook
         // check if archive exists
         if ($archive->previousArchiveExists()) {
             if ($archive->verifyIntegrity($this->archiveFilename)) {
-                if (!Console::confirm("A previous archive with the name {$this->archiveFilename} already exists. Would you like to overwrite it?")) {
+                $this->output->writeln("A previous archive with the name {$this->archiveFilename} already exists.");
+                if (!Console::confirm("Would you like to overwrite it?")) {
                     return $archive->getArchiveFilepath();
                 }
             }
@@ -176,5 +172,12 @@ class PushArchiveHook extends AbstractHook
         $this->output->writeln('✔️ Verified injected wp-config.php file for ' . $this->env->__toString());
 
         return true;
+    }
+
+    public function cleanup(): void
+    {
+        if ($this->hasInjectedEnvFiles) {
+            $this->injectEnvFiles(['revert' => true]);
+        }
     }
 }

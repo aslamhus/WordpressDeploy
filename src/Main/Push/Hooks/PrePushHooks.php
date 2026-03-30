@@ -20,25 +20,18 @@ class PrePushHooks extends AbstractHook
     public function __construct(HookArgs $hookArgs)
     {
 
-        parent::__construct(...$hookArgs);
+        parent::__construct($hookArgs);
     }
 
     public function run(): PrePushHooks
     {
 
+        $hookName = Hooks::prePush;
+        if (!$this->hasHooks($hookName)) return $this;
         Console::header('Pre-push hooks');
-        try {
-            // 1. optionally run hooks
-            $this->runHookScripts(Hooks::prePush);
-            // 2. Prepare and export database (skip if user has opted not to push db)
-
-            // 3. inject env files
-
-        } catch (\Exception $e) {
-            // if any error occurs, we have to reverse any changes 
-            // 1. perform a search replace back to local values
-            throw $e;
-        }
+        $scripts = $this->runHookScripts($hookName);
         return $this;
     }
+
+    public function cleanup(): void {}
 }
