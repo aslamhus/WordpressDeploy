@@ -74,7 +74,7 @@ class ComposerRemote
         $ssh =  $ssh->connect();
         $remotePath = escapeshellarg(dirname($this->remote['json']));
         if (empty($remotePath)) {
-            throw new \Exception('Failed to install composer, remote path was empty. Check your .yaswpd.json config');
+            throw new \Exception('Failed to install composer, remote path was empty. Check your wpd.json config');
         }
         $cmd = implode(" ", [
             ...$this->remote['cmd'], // composer or phar.composer etc.

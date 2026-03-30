@@ -16,7 +16,7 @@ class ComposerConfig extends AbstractArraySettings
     {
         $this->data['json'] = $params['json'] ?? "";
         if (isset($params['cmd']) && !is_array($params['cmd'])) {
-            throw new \Exception("Composer cmd must be an array. Check your composer settings for $env in your .yaswpd.json config");
+            throw new \Exception("Composer cmd must be an array. Check your composer settings for $env in your wpd.json config");
         }
         $this->data['cmd'] = $params['cmd'] ?? ['composer'];
         if (isset($params['install'])) {

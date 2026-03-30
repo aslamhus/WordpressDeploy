@@ -15,13 +15,13 @@ if (!file_exists($pathToAutoload)) {
 }
 require_once $pathToAutoload;
 
-// load .yaswpd.json.
+// load wpd.json.
 // defaults to working directory file, but for testing purposes, we can add a path to the config 
 // by exporting TEST_YAS_WPD before running ./vendor/bin/phpunit
 
-$pathToSettings = isset($_SERVER['TEST_YAS_WPD']) ? $_SERVER['TEST_YAS_WPD'] : getcwd() . '/.yaswpd.json';
+$pathToSettings = isset($_SERVER['TEST_YAS_WPD']) ? $_SERVER['TEST_YAS_WPD'] : getcwd() . '/wpd.json';
 if (!file_exists($pathToSettings)) {
-    echo ".yaswpd.json not found in working directory";
+    echo "wpd.json not found in working directory";
     exit;
 }
 

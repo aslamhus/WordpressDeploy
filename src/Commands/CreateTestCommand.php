@@ -22,7 +22,7 @@ use Yashus\WPD\Process\Process;
     // this short description is shown when running "php bin/console list"
     description: 'Test your wordpress deploy settings',
     // this is shown when running the command with the "--help" option
-    help: 'Test your wordpress deploy settings. Run this in your project root where both your .yaswpd.json file and vendor directory exists.',
+    help: 'Test your wordpress deploy settings. Run this in your project root where both your wpd.json file and vendor directory exists.',
     // this allows you to show one or more usage examples (no need to add the command name)
     usages: ['list', '<testsuite-name>']
 

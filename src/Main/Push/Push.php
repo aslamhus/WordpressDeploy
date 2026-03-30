@@ -50,7 +50,7 @@ class Push extends AbstractMain
         $this->settings = $settings;
         $this->ssh = $ssh;
         if (empty($settings->getEnvSettings($this->env))) {
-            throw new \Exception("Invalid .yaswpd.json setting. Expected property name corresponding to env: '{$this->env}'");
+            throw new \Exception("Invalid wpd.json setting. Expected property name corresponding to env: '{$this->env}'");
         }
         $this->remote = $settings->getEnvSettings($this->env); // staging || production
         $this->release_id = Utils::getTodayFormatted();

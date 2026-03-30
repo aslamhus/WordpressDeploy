@@ -170,7 +170,7 @@ class PushArchiveHook extends AbstractHook
         try {
             Process::fromShellCommandLine("cat $wp_config_path | grep $env_db_name", $output, $exit_code, true);
         } catch (\Exception $e) {
-            throw new \Exception("injected wp-config.php did not have the correct database name ($env_db_name) for " . $this->env->__toString() . '. Please check your .yaswpd.json settings. ' . $e->getMessage());
+            throw new \Exception("injected wp-config.php did not have the correct database name ($env_db_name) for " . $this->env->__toString() . '. Please check your wpd.json settings. ' . $e->getMessage());
         }
         $this->output->writeln('✔️ Verified injected wp-config.php file for ' . $this->env->__toString());
 
